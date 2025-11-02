@@ -1648,8 +1648,6 @@ return function(main, settings)
 		end,
 
 	})
-	
-	}
 	-- Speed Command
 table.insert(commands, {
 	Name = "speed",
