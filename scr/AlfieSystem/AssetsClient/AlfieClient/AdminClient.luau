@@ -57,7 +57,7 @@ local function ensurePanel()
 
 	local clone = source:Clone()
 	clone.ResetOnSpawn = false
-	clone.IgnoreGuiInset = false
+	clone.IgnoreGuiInset = true
 	clone.Enabled = true
 	clone.Parent = playerGui
 
@@ -421,6 +421,7 @@ local function showNotice(header, text, kind)
 
 	local popIn = TweenService:Create(notice, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = originalPos })
 	popIn:Play()
+	script.Notification:Play()
 
 	task.delay(3, function()
 		local slideOut = TweenService:Create(notice, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = offscreenPos })
@@ -445,23 +446,23 @@ end
 local _gaQueue = {}
 local _gaBusy = false
 
-local function _getGlobalAnnouncementGui()
-	local ga = findDescendant(playerGui, "GlobalAnnouncement")
+local function _getAnnouncementGui()
+	local ga = findDescendant(playerGui, "Announcement")
 	if not ga then
 		local panel = playerGui:FindFirstChild("AlfiePanel") or ensurePanel()
-		ga = panel and findDescendant(panel, "GlobalAnnouncement") or nil
+		ga = panel and findDescendant(panel, "Announcement") or nil
 	end
 	return ga
 end
 
-local function _renderGlobalAnnouncement(payload)
+local function _renderAnnouncement(payload)
 	local text = (typeof(payload) == "table" and tostring(payload.text or "")) or ""
 	local titleText = (typeof(payload) == "table" and tostring(payload.title or "Announcement")) or "Announcement"
 	local subtitleText = (typeof(payload) == "table" and tostring(payload.subtitle or "")) or ""
 
-	local ga = _getGlobalAnnouncementGui()
+	local ga = _getAnnouncementGui()
 	if not ga then
-		warn("[AdminClient] GlobalAnnouncement GUI not found in PlayerGui")
+		warn("[AdminClient] Announcement GUI not found in PlayerGui")
 		return
 	end
 
@@ -506,6 +507,7 @@ local function _renderGlobalAnnouncement(payload)
 					pic.Image = thumb
 				end
 				pic.Visible = true
+				script.Announcement:Play()
 			end)
 		else
 			pic.Visible = false
@@ -524,8 +526,8 @@ local function _renderGlobalAnnouncement(payload)
 	end
 end
 
-local function _hideGlobalAnnouncement()
-	local ga = _getGlobalAnnouncementGui()
+local function _hideAnnouncement()
+	local ga = _getAnnouncementGui()
 	if not ga then return end
 	local bg = findDescendant(ga, "Bg")
 	if ga:IsA("ScreenGui") then
@@ -538,7 +540,7 @@ local function _hideGlobalAnnouncement()
 	end
 end
 
-local function showGlobalAnnouncement(payload)
+local function showAnnouncement(payload)
 	table.insert(_gaQueue, payload)
 	local function process()
 		if _gaBusy then return end
@@ -546,9 +548,9 @@ local function showGlobalAnnouncement(payload)
 		if not nextPayload then return end
 		_gaBusy = true
 		local duration = (typeof(nextPayload) == "table" and tonumber(nextPayload.duration)) or 3
-		_renderGlobalAnnouncement(nextPayload)
+		_renderAnnouncement(nextPayload)
 		task.delay(duration, function()
-			_hideGlobalAnnouncement()
+			_hideAnnouncement()
 			_gaBusy = false
 			process()
 		end)
@@ -874,7 +876,7 @@ do
 			if string.lower(gui) == "hint" then
 				showHintAnnouncement(payload)
 			else
-				showGlobalAnnouncement(payload)
+				showAnnouncement(payload)
 			end
 		end)
 	else
