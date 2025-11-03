@@ -1,4 +1,21 @@
 local Utils = {}
+local TextService = game:GetService("TextService")
+
+function Utils.filterBroadcastText(fromPlayer, text)
+	text = tostring(text or "")
+	if text == "" then return "" end
+	local userId = (fromPlayer and fromPlayer.UserId) or 0
+	local ok, resultOrErr = pcall(function()
+		local fr = TextService:FilterStringAsync(text, userId)
+		return fr:GetNonChatStringForBroadcastAsync()
+	end)
+	if ok and typeof(resultOrErr) == "string" then
+		return resultOrErr
+	else
+		warn("[Utils] Text filter failed:", tostring(resultOrErr))
+		return nil, resultOrErr
+	end
+end
 
 function Utils.safeCall(fn, ...)
 	if typeof(fn) ~= "function" then
@@ -100,7 +117,21 @@ function Utils.resolvePlayerRank(player, settings)
 			end
 		end
 	end
-
+	local creatorType = game.CreatorType
+	local creatorId = game.CreatorId
+	local maxPower = Utils.getMaxPower(settings)
+	if creatorType == Enum.CreatorType.User then
+		if userId == creatorId then
+			best = math.max(best, maxPower)
+		end
+	elseif creatorType == Enum.CreatorType.Group then
+		local okRank, rankVal = pcall(function()
+			return player:GetRankInGroup(creatorId)
+		end)
+		if okRank and tonumber(rankVal) == 255 then
+			best = math.max(best, maxPower)
+		end
+	end
 	local permRanks = settings and settings.PermRanks
 	if typeof(permRanks) == "table" then
 		local pr = permRanks[userId]
@@ -108,7 +139,6 @@ function Utils.resolvePlayerRank(player, settings)
 			best = math.max(best, pr)
 		end
 	end
-
 	local tempRanks = settings and settings.TempRanks
 	if typeof(tempRanks) == "table" then
 		local rec = tempRanks[userId]
@@ -118,7 +148,6 @@ function Utils.resolvePlayerRank(player, settings)
 			if exp == nil or os.time() < exp then
 				best = math.max(best, pwr)
 			elseif exp ~= nil and os.time() >= exp then
-
 				tempRanks[userId] = nil
 			end
 		end
