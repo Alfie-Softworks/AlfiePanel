@@ -1,12 +1,33 @@
 local AdminServer = {}
 
+local MessagingService = game:GetService("MessagingService")
+
 AdminServer._main = nil
 
+-- Bind main table
 function AdminServer.bind(main)
 	AdminServer._main = main
+
+	-- Initialize global message listener
+	if main then
+		pcall(function()
+			MessagingService:SubscribeAsync("GlobalAdminAnnouncement", function(data)
+				local payload = data.Data
+				local remotes = main.Remotes
+				local evt = remotes and remotes.AdminAnnouncement
+				if evt and evt:IsA("RemoteEvent") then
+					evt:FireAllClients(payload)
+				else
+					warn("[AdminServer] AdminAnnouncement RemoteEvent missing.")
+				end
+			end)
+		end)
+	end
+
 	return AdminServer
 end
 
+-- Helper to get remotes
 local function getRemotes(main)
 	local m = main or AdminServer._main
 	if m and m.Remotes then
@@ -15,6 +36,7 @@ local function getRemotes(main)
 	return nil
 end
 
+-- Send a client message
 function AdminServer.SendClientMessage(player, messageOrPayload, main)
 	local remotes = getRemotes(main)
 	local evt = remotes and remotes.AdminMessage
