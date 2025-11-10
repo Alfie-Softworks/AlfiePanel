@@ -1,5 +1,6 @@
 local Movement = {}
 
+-- Services we need
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,19 +8,23 @@ local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 
+-- State tracking for noclip (pass-through walls)
 local _noclipState = { active = false, connDA = nil }
+
+-- State tracking for fly mode
 local _flyState = {
-	active = false,
-	force = nil,
-	gyro = nil,
-	conn = nil,
-	connIB = nil,
-	connIE = nil,
-	lockType = "PlatformStand",
-	noclip = false,
-	speed = 50,
+	active = false,  -- Whether flying is active
+	force = nil,     -- BodyPosition used to move the player
+	gyro = nil,      -- BodyGyro used to orient the player
+	conn = nil,      -- RenderStepped connection for fly updates
+	connIB = nil,    -- InputBegan connection
+	connIE = nil,    -- InputEnded connection
+	lockType = "PlatformStand", -- Humanoid property used to lock movement
+	noclip = false,  -- Whether flying disables collisions
+	speed = 50,      -- Fly speed
 }
 
+-- Applies noclip state to every BasePart in a character
 local function applyNoclipToCharacter(char, active)
 	if not char then return end
 	for _, d in ipairs(char:GetDescendants()) do
@@ -27,8 +32,10 @@ local function applyNoclipToCharacter(char, active)
 			d.CanCollide = not active and true or false
 		end
 	end
+	-- Disconnect any previous DescendantAdded connection
 	if _noclipState.connDA then _noclipState.connDA:Disconnect() _noclipState.connDA = nil end
 	if active then
+		-- Make new parts added to the character also non-collidable
 		_noclipState.connDA = char.DescendantAdded:Connect(function(inst)
 			if _noclipState.active and inst:IsA("BasePart") then
 				inst.CanCollide = false
@@ -37,6 +44,7 @@ local function applyNoclipToCharacter(char, active)
 	end
 end
 
+-- Initialize movement system, apply noclip if character spawns while active
 function Movement.init()
 	player.CharacterAdded:Connect(function(char)
 		if _noclipState.active then
@@ -45,6 +53,7 @@ function Movement.init()
 	end)
 end
 
+-- Helper to enable/disable collisions for all parts in a character
 local function setCharacterCollide(char, enabled)
 	if not char then return end
 	for _, d in ipairs(char:GetDescendants()) do
@@ -54,32 +63,44 @@ local function setCharacterCollide(char, enabled)
 	end
 end
 
+-- Stops flying: cleans up forces, gyros, and resets humanoid state
 local function stopFly()
 	_flyState.active = false
+
+	-- Disconnect all connections
 	if _flyState.conn then _flyState.conn:Disconnect() _flyState.conn = nil end
 	if _flyState.connIB then _flyState.connIB:Disconnect() _flyState.connIB = nil end
 	if _flyState.connIE then _flyState.connIE:Disconnect() _flyState.connIE = nil end
+
+	-- Destroy forces applied
 	if _flyState.force then _flyState.force:Destroy() _flyState.force = nil end
 	if _flyState.gyro then _flyState.gyro:Destroy() _flyState.gyro = nil end
+
+	-- Unlock humanoid if locked
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		pcall(function() humanoid[_flyState.lockType] = false end)
 	end
+
+	-- Restore collisions if noclip is off
 	if _flyState.noclip and not _noclipState.active then
 		setCharacterCollide(player.Character, true)
 	end
 end
 
+-- Starts flying: sets up forces, gyros, input, and movement
 local function startFly(payload)
-	stopFly()
+	stopFly() -- Make sure previous fly state is cleaned
 	local char = player.Character
 	if not char then return end
+
+	-- Determine which part to apply forces to (HumanoidRootPart preferred)
 	local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head")
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	if not (hrp and humanoid) then return end
 
-	local hasNoclip = (typeof(payload) == "table" and payload.noclip ~= nil)
-	local noclip = hasNoclip and payload.noclip or _noclipState.active
+	-- Extract settings from payload or use defaults
+	local noclip = (typeof(payload) == "table" and payload.noclip ~= nil) and payload.noclip or _noclipState.active
 	local speed = (typeof(payload) == "table" and tonumber(payload.speed)) or 50
 	local lockType = (typeof(payload) == "table" and tostring(payload.lockType)) or "PlatformStand"
 
@@ -87,18 +108,20 @@ local function startFly(payload)
 	_flyState.speed = speed
 	_flyState.lockType = lockType
 
+	-- Create force to move the character
 	local flyForce = Instance.new("BodyPosition")
 	flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
 	flyForce.Position = hrp.Position + Vector3.new(0, 4, 0)
 	flyForce.Name = "AlfieFlyForce"
 	flyForce.Parent = hrp
 
+	-- Create gyro to control orientation
 	local bodyGyro = Instance.new("BodyGyro")
 	bodyGyro.D = 50
 	bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
 	bodyGyro.P = noclip and 2000 or 200
-	bodyGyro.Name = "AlfieFlyGyro"
 	bodyGyro.CFrame = hrp.CFrame
+	bodyGyro.Name = "AlfieFlyGyro"
 	bodyGyro.Parent = hrp
 
 	_flyState.force = flyForce
@@ -108,14 +131,16 @@ local function startFly(payload)
 		setCharacterCollide(char, false)
 	end
 
+	-- Variables for tilt and movement calculations
 	local tiltMax = 25
 	local tiltAmount = 0
 	local tiltInc = 1
 	local static = 0
 	local lastUpdate = tick()
 	local lastPosition = hrp.Position
-
 	local movementKeysPressed = {}
+
+	-- Input helpers for movement
 	local function addDir(d) movementKeysPressed[d] = true end
 	local function removeDir(d) movementKeysPressed[d] = nil end
 	local function onInputBegan(io, gpe)
@@ -137,12 +162,15 @@ local function startFly(payload)
 		elseif kc == Enum.KeyCode.Space then removeDir("Up")
 		elseif kc == Enum.KeyCode.LeftControl then removeDir("Down") end
 	end
+
+	-- Connect input events
 	_flyState.connIB = UserInputService.InputBegan:Connect(onInputBegan)
 	_flyState.connIE = UserInputService.InputEnded:Connect(onInputEnded)
 
 	_flyState.active = true
-	pcall(function() humanoid[lockType] = true end)
+	pcall(function() humanoid[lockType] = true end) -- Lock humanoid to prevent default physics interference
 
+	-- Calculates the next movement vector based on input and deltaTime
 	local function GetNextMovement(deltaTime, speed)
 		local nextMove = Vector3.new()
 		local directions = {
@@ -171,11 +199,13 @@ local function startFly(payload)
 		return CFrame.new(nextMove * speed * deltaTime), nextMove
 	end
 
+	-- Update fly movement every frame
 	_flyState.conn = RunService.RenderStepped:Connect(function()
 		if not _flyState.active or not char or not hrp or not humanoid then
 			stopFly()
 			return
 		end
+
 		local now = tick()
 		local delta = now - lastUpdate
 		lastUpdate = now
@@ -186,6 +216,7 @@ local function startFly(payload)
 		local move, directionalVector = GetNextMovement(delta, (_flyState.speed or 50) * 10)
 		local targetCFrame = CFrame.new(pos, pos + look) * move
 
+		-- Adjust BodyPosition force
 		local targetD = 750 + (_flyState.speed * 0.2)
 		if _flyState.noclip then targetD = targetD / 2 end
 
@@ -216,6 +247,7 @@ local function startFly(payload)
 	end)
 end
 
+-- Connect RemoteEvents for fly and noclip
 function Movement.wireRemotes()
 	local folderFly = ReplicatedStorage:WaitForChild("AdminEvents")
 	local flyEvt = folderFly and folderFly:WaitForChild("AdminFly")
