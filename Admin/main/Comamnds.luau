@@ -1916,26 +1916,59 @@ return function(main, settings)
 		Tags = {"movement"},
 		Args = {},
 		Function = function(speaker, args)
-			if speaker and speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart") then
-				local hrp = speaker.Character.HumanoidRootPart
+			local Players = game:GetService("Players")
 
-				local bv = Instance.new("BodyVelocity")
-				bv.Velocity = Vector3.new(math.random(-300,300), 250, math.random(-300,300))
-				bv.MaxForce = Vector3.new(1e6,1e6,1e6)
-				bv.P = 1e5
-				bv.Parent = hrp
+			local function flingCharacter(character)
+				if character and character:FindFirstChild("HumanoidRootPart") then
+					local hrp = character.HumanoidRootPart
 
-				local bav = Instance.new("BodyAngularVelocity")
-				bav.AngularVelocity = Vector3.new(math.random(-20,20), math.random(-20,20), math.random(-20,20))
-				bav.MaxTorque = Vector3.new(1e6,1e6,1e6)
-				bav.P = 1e5
-				bav.Parent = hrp
+					local bv = Instance.new("BodyVelocity")
+					bv.Velocity = Vector3.new(math.random(-300,300), 250, math.random(-300,300))
+					bv.MaxForce = Vector3.new(1e6,1e6,1e6)
+					bv.P = 1e5
+					bv.Parent = hrp
 
-				game:GetService("Debris"):AddItem(bv, 0.7)
-				game:GetService("Debris"):AddItem(bav, 0.7)
+					local bav = Instance.new("BodyAngularVelocity")
+					bav.AngularVelocity = Vector3.new(math.random(-20,20), math.random(-20,20), math.random(-20,20))
+					bav.MaxTorque = Vector3.new(1e6,1e6,1e6)
+					bav.P = 1e5
+					bav.Parent = hrp
+
+					game:GetService("Debris"):AddItem(bv, 0.7)
+					game:GetService("Debris"):AddItem(bav, 0.7)
+				end
+			end
+
+			local targetArg = args[1] and args[1]:lower() or ""
+			local targets = {}
+
+			if targetArg == "all" then
+				for _, player in pairs(Players:GetPlayers()) do
+					table.insert(targets, player)
+				end
+			elseif targetArg == "others" then
+				for _, player in pairs(Players:GetPlayers()) do
+					if player ~= speaker then
+						table.insert(targets, player)
+					end
+				end
+			elseif targetArg ~= "" then
+				for _, player in pairs(Players:GetPlayers()) do
+					if string.find(player.Name:lower(), targetArg) then
+						table.insert(targets, player)
+						break
+					end
+				end
+			else
+				table.insert(targets, speaker)
+			end
+
+			for _, player in pairs(targets) do
+				if player.Character then
+					flingCharacter(player.Character)
+				end
 			end
 		end,
-
 	})
 
 	table.insert(commands, {
