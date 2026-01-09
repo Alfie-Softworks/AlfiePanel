@@ -1696,59 +1696,111 @@ return function(main, settings)
 		end,
 	})
 
-	table.insert(commands, {
-		Name = "explode",
-		Aliases = {},
-		Prefixes = { settings.Prefix },
-		Rank = 3,
-		RankLock = false,
-		Tags = {"combat"},
+table.insert(commands, {
+    Name = "explode",
+    Aliases = {},
+    Prefixes = { settings.Prefix },
+    Rank = 3,
+    RankLock = false,
+    Tags = {"combat"},
+    Args = {"target"},
+    Function = function(speaker, args)
+        local Players = game:GetService("Players")
+        local targetArg = args[1] and args[1]:lower() or ""
+        local targets = {}
 
-		Args = {},
-		Function = function(speaker, args)
-			if speaker and speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart") then
+        -- Determine targets
+        if targetArg == "all" then
+            for _, player in pairs(Players:GetPlayers()) do
+                table.insert(targets, player)
+            end
+        elseif targetArg == "others" then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= speaker then
+                    table.insert(targets, player)
+                end
+            end
+        elseif targetArg ~= "" then
+            for _, player in pairs(Players:GetPlayers()) do
+                if string.find(player.Name:lower(), targetArg) then
+                    table.insert(targets, player)
+                    break -- only first match
+                end
+            end
+        else
+            table.insert(targets, speaker)
+        end
 
-				local explosion = Instance.new("Explosion")
-				explosion.Position = speaker.Character.HumanoidRootPart.Position
-				explosion.BlastRadius = 10
-				explosion.BlastPressure = 500000
-				explosion.Parent = workspace
+        -- Apply explosion to all targets
+        for _, player in pairs(targets) do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local explosion = Instance.new("Explosion")
+                explosion.Position = player.Character.HumanoidRootPart.Position
+                explosion.BlastRadius = 10
+                explosion.BlastPressure = 500000
+                explosion.Parent = workspace
 
-				if speaker.Character:FindFirstChild("Humanoid") then
-					speaker.Character.Humanoid.Health = 0
-				end
+                if player.Character:FindFirstChild("Humanoid") then
+                    player.Character.Humanoid.Health = 0
+                end
 
-				if main and typeof(main.addLog) == "function" then
-					pcall(function() main.addLog(speaker, ";explode") end)
-				end
-			end
-		end,
+                if main and typeof(main.addLog) == "function" then
+                    pcall(function()
+                        main.addLog(speaker, ";explode " .. (targetArg ~= "" and targetArg or ""))
+                    end)
+                end
+            end
+        end
+    end,
+})
 
-	})
+table.insert(commands, {
+    Name = "speed",
+    Aliases = {"walkspeed"},
+    Prefixes = { settings.Prefix },
+    Rank = 2,
+    RankLock = false,
+    Tags = {"movement"},
+    Args = {"target", "number"},
+    Function = function(speaker, args)
+        local Players = game:GetService("Players")
+        local targetArg = args[1] and args[1]:lower() or ""
+        local speed = tonumber(args[2])
+        if not speed then return end
 
-	table.insert(commands, {
-		Name = "speed",
-		Aliases = {"walkspeed"},
-		Prefixes = { settings.Prefix },
-		Rank = 2,
-		RankLock = false,
-		Tags = {"movement"},
-		Args = {"number"},
-		Function = function(speaker, args)
-			local speed = tonumber(args[1])
-			if not speed then
-				return
-			end
+        local targets = {}
 
-			if speaker and speaker.Character and speaker.Character:FindFirstChild("Humanoid") then
-				speaker.Character.Humanoid.WalkSpeed = speed
-				if main and typeof(main.addLog) == "function" then
-					pcall(function() main.addLog(speaker, ";speed "..speed) end)
-				end
-			end
-		end,
+        if targetArg == "all" then
+            for _, player in pairs(Players:GetPlayers()) do
+                table.insert(targets, player)
+            end
+        elseif targetArg == "others" then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= speaker then
+                    table.insert(targets, player)
+                end
+            end
+        elseif targetArg ~= "" then
+            for _, player in pairs(Players:GetPlayers()) do
+                if string.find(player.Name:lower(), targetArg) then
+                    table.insert(targets, player)
+                    break -- first match only
+                end
+            end
+        else
+            table.insert(targets, speaker)
+        end
 
-	})
+        for _, player in pairs(targets) do
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = speed
+                if main and typeof(main.addLog) == "function" then
+                    pcall(function() main.addLog(speaker, ";speed " .. (targetArg ~= "" and targetArg or "") .. " " .. speed) end)
+                end
+            end
+        end
+    end,
+})
 
 	table.insert(commands, {
 		Name = "jump",
