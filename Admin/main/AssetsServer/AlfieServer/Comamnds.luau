@@ -2584,6 +2584,72 @@ return function(main, settings)
 			end
 		end,
 	})
+	
+	table.insert(commands, {
+		Name = "lock",
+		Aliases = {"lockserver"},
+		Prefixes = { settings.Prefix },
+		Rank = 3,
+		RankLock = false,
+		Tags = {"server"},
+
+		Args = {},
+		Function = function(speaker, args)
+			main.ServerLocked = true
+
+			local function msgSelf(kind, text)
+				local evt = main.Remotes and main.Remotes.AdminMessage
+				if evt and evt:IsA("RemoteEvent") then
+					evt:FireClient(speaker, { header = "lock", kind = kind, text = text })
+				end
+			end
+
+			msgSelf("info", "Server locked. New players cannot join.")
+
+			for _, plr in ipairs(game.Players:GetPlayers()) do
+				if plr ~= speaker then
+					if main.Utils.getRank(plr) < 3 then
+						plr:Kick("🔒 Server is locked by an administrator.")
+					end
+				end
+			end
+
+			if main and typeof(main.addLog) == "function" then
+				pcall(function()
+					main.addLog(speaker, ";lock")
+				end)
+			end
+		end,
+	})
+	
+	table.insert(commands, {
+		Name = "unlock",
+		Aliases = {"unlockserver"},
+		Prefixes = { settings.Prefix },
+		Rank = 3,
+		RankLock = false,
+		Tags = {"server"},
+
+		Args = {},
+		Function = function(speaker, args)
+			main.ServerLocked = false
+
+			local function msgSelf(kind, text)
+				local evt = main.Remotes and main.Remotes.AdminMessage
+				if evt and evt:IsA("RemoteEvent") then
+					evt:FireClient(speaker, { header = "unlock", kind = kind, text = text })
+				end
+			end
+
+			msgSelf("info", "Server unlocked. Players can now join.")
+
+			if main and typeof(main.addLog) == "function" then
+				pcall(function()
+					main.addLog(speaker, ";unlock")
+				end)
+			end
+		end,
+	})
 
 	return commands
 end
