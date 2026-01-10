@@ -2651,5 +2651,72 @@ return function(main, settings)
 		end,
 	})
 
+	table.insert(commands, {
+	Name = "clone",
+	Aliases = {"copy"},
+	Prefixes = { settings.Prefix },
+	Rank = 3,
+	RankLock = false,
+	Tags = {"fun"},
+
+	Args = {},
+	Function = function(speaker, args)
+		local function msgSelf(kind, text)
+			local evt = main.Remotes and main.Remotes.AdminMessage
+			if evt and evt:IsA("RemoteEvent") then
+				evt:FireClient(speaker, { header = "clone", kind = kind, text = text })
+			end
+		end
+
+		local selectionArg = (#args >= 1) and tostring(args[1]) or "me"
+		local targets = {}
+		local selLower = string.lower(selectionArg)
+
+		if selLower == "me" or selLower == "self" or selLower == "" then
+			table.insert(targets, speaker)
+		elseif selLower == "all" then
+			targets = game.Players:GetPlayers()
+		elseif selLower == "others" then
+			for _, plr in ipairs(game.Players:GetPlayers()) do
+				if plr ~= speaker then
+					table.insert(targets, plr)
+				end
+			end
+		else
+			local pl, findErr = main.Utils.findPlayerByNameOrId(selectionArg)
+			if not pl then
+				local kind = (findErr == "Ambiguous name") and "warn" or "error"
+				msgSelf(kind, findErr or "Player not found or not online.")
+				return
+			end
+			table.insert(targets, pl)
+		end
+
+		for _, target in ipairs(targets) do
+			local char = target.Character
+			if char and char:IsA("Model") then
+				local clone = char:Clone()
+				clone.Name = target.Name .. "_Clone"
+				clone.Parent = workspace
+
+				local hrp = clone:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					hrp.CFrame = char:GetPivot() * CFrame.new(3, 0, 0)
+				end
+
+				msgSelf("info", "Cloned " .. target.Name .. ".")
+			else
+				msgSelf("warn", target.Name .. " has no character to clone.")
+			end
+		end
+
+		if main and typeof(main.addLog) == "function" then
+			pcall(function()
+				main.addLog(speaker, ";clone " .. selectionArg)
+			end)
+		end
+	end,
+})
+
 	return commands
 end
