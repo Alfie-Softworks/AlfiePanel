@@ -796,7 +796,7 @@ return function(main, settings)
 
 	table.insert(commands, {
 		Name = "teleport",
-		Aliases = {"to"},
+		Aliases = {"to", "goto", "tp"},
 		Prefixes = { settings.Prefix },
 		Rank = 2,
 		RankLock = false,
