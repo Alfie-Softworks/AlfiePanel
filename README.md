@@ -5,8 +5,6 @@ This Admin panel is not near complete yet so use with caution
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>GitHub Star Button</title>
 
   <!-- GitHub buttons script -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
