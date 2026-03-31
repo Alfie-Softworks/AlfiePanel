@@ -2,122 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AlfiePanel Documentation</title>
-
-<style>
-body {
-    margin: 0;
-    font-family: system-ui, Arial, sans-serif;
-    background: #111;
-    color: #ddd;
-    display: flex;
-}
-
-/* Sidebar */
-.sidebar {
-    width: 260px;
-    height: 100vh;
-    background: #1a1a1a;
-    padding: 20px;
-    position: fixed;
-    border-right: 1px solid #2a2a2a;
-    overflow-y: auto;
-}
-
-.sidebar h2 {
-    color: #ff8c00;
-    margin-bottom: 20px;
-}
-
-.sidebar a {
-    display: block;
-    color: #aaa;
-    text-decoration: none;
-    padding: 8px;
-    border-radius: 6px;
-    margin-bottom: 4px;
-}
-
-.sidebar a:hover {
-    background: #2a2a2a;
-    color: #fff;
-}
-
-/* Content */
-.content {
-    margin-left: 280px;
-    padding: 40px;
-    max-width: 900px;
-}
-
-h1, h2, h3 {
-    color: #ff8c00;
-}
-
-p {
-    line-height: 1.6;
-}
-
-/* Code */
-pre {
-    background: #1a1a1a;
-    padding: 15px;
-    border-radius: 6px;
-    overflow-x: auto;
-    border: 1px solid #2a2a2a;
-}
-
-code {
-    color: #ffa94d;
-}
-
-/* Tables */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-td, th {
-    border: 1px solid #2a2a2a;
-    padding: 8px;
-}
-
-th {
-    background: #1a1a1a;
-}
-
-/* Divider */
-hr {
-    border: none;
-    border-top: 1px solid #2a2a2a;
-    margin: 30px 0;
-}
-</style>
+<title>AlfiePanel Docs</title>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div class="sidebar">
-<h2>AlfiePanel</h2>
-<a href="#commands">Commands API</a>
-<a href="#settings">Settings</a>
-<a href="#utils">Utils</a>
+    <h2>AlfiePanel</h2>
+    <a href="#commands">Commands API</a>
+    <a href="#settings">Settings</a>
+    <a href="#utils">Utils</a>
 </div>
 
 <div class="content">
 
 <!-- COMMANDS -->
-<h1 id="commands">AlfiePanel – Custom Commands API</h1>
+<section id="commands">
+<h1>Custom Commands API</h1>
 
-<p>This document is a <strong>deep, practical guide</strong> to writing custom commands.</p>
+<p>Deep, practical guide to writing custom commands using internal AlfiePanel systems.</p>
 
 <hr>
 
-<h2>1. Execution Pipeline</h2>
+<h2>Execution Pipeline</h2>
 <pre>Player → ChatHandler → Prefix → Parser → Lookup → Rank Check → Run() → Response</pre>
 
-<h2>2. Command Structure</h2>
+<h2>Command Structure</h2>
 <pre>{
     Name = "example",
     Aliases = {"ex"},
@@ -126,68 +37,42 @@ hr {
     end
 }</pre>
 
-<h2>3. Command Fields</h2>
-<p><strong>Name:</strong> Unique identifier</p>
-<p><strong>Aliases:</strong></p>
+<h2>Command Fields</h2>
+<p><b>Name:</b> Unique identifier</p>
+<p><b>Aliases:</b></p>
 <pre>Aliases = {"tp", "bring"}</pre>
-<p><strong>Rank:</strong> Required power</p>
+<p><b>Rank:</b> Required power</p>
 
-<hr>
-
-<h2>4. Context (ctx)</h2>
-
+<h2>Context (ctx)</h2>
 <table>
 <tr><th>Field</th><th>Meaning</th></tr>
-<tr><td>Speaker</td><td>Player running command</td></tr>
+<tr><td>Speaker</td><td>Executor</td></tr>
 <tr><td>Args</td><td>Arguments</td></tr>
 <tr><td>Settings</td><td>Live settings</td></tr>
 <tr><td>Utils</td><td>Helpers</td></tr>
-<tr><td>Reply</td><td>Feedback</td></tr>
+<tr><td>Reply</td><td>Response</td></tr>
 </table>
 
-<hr>
-
-<h2>5. Reply</h2>
+<h2>Reply</h2>
 <pre>ctx:Reply("Success")
-ctx:Reply("Error", "error")</pre>
+ctx:Reply("Error","error")</pre>
 
-<hr>
+<h2>Argument Safety</h2>
+<pre>local target, err = ctx.Utils.findPlayerByNameOrId(ctx.Args[1])</pre>
 
-<h2>6. Argument Safety</h2>
-<pre>local target, err = ctx.Utils.findPlayerByNameOrId(ctx.Args[1])
-if not target then
-    ctx:Reply(err, "error")
-    return
-end</pre>
+<h2>Rank Safety</h2>
+<pre>Utils.canChangeRank(a,b)</pre>
 
-<hr>
-
-<h2>7. Rank Safety</h2>
-<pre>local ok, err = ctx.Utils.canChangeRank(myPower, targetPower)
-if not ok then
-    ctx:Reply(err, "error")
-    return
-end</pre>
-
-<hr>
-
-<h2>8. DataStore Safety</h2>
+<h2>DataStore Safety</h2>
 <pre>Utils.dataStoreCallWithRetry(function()
 end)</pre>
 
 <hr>
-
-<h2>Common Mistakes</h2>
-<ul>
-<li>Using Players:GetPlayers()</li>
-<li>No validation</li>
-<li>Unsafe rank changes</li>
-</ul>
-
-<hr>
+</section>
 
 <!-- SETTINGS -->
-<h1 id="settings">AlfiePanel – Settings Explained</h1>
+<section id="settings">
+<h1>Settings Explained</h1>
 
 <h2>Prefix</h2>
 <pre>Settings.Prefix = ";"</pre>
@@ -198,7 +83,7 @@ end)</pre>
 <h2>Notice Rate Limit</h2>
 <pre>Settings.NoticeRateLimitSeconds = 2</pre>
 
-<h2>Burst</h2>
+<h2>Burst Protection</h2>
 <pre>
 Settings.ChatBurstWindowSeconds = 3
 Settings.ChatBurstLimitCount = 2
@@ -217,11 +102,13 @@ Settings.Ranks = {
 </pre>
 
 <hr>
+</section>
 
 <!-- UTILS -->
-<h1 id="utils">Utils Functions</h1>
+<section id="utils">
+<h1>Utils Functions</h1>
 
-<h2>Text</h2>
+<h2>Text Safety</h2>
 <pre>Utils.filterBroadcastText(player, text)</pre>
 
 <h2>Safe Call</h2>
@@ -233,7 +120,7 @@ Settings.Ranks = {
 <h2>Throttle</h2>
 <pre>Utils.throttleCheck(map, key, window)</pre>
 
-<h2>Rank</h2>
+<h2>Rank Logic</h2>
 <pre>
 Utils.resolvePlayerRank(player)
 Utils.canChangeRank(a,b)
@@ -245,7 +132,10 @@ Utils.canChangeRank(a,b)
 <h2>Duration</h2>
 <pre>Utils.parseDuration("10m")</pre>
 
+</section>
+
 </div>
 
+<script src="script.js"></script>
 </body>
 </html>
