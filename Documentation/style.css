@@ -1,0 +1,86 @@
+body {
+    margin: 0;
+    font-family: system-ui, Arial, sans-serif;
+    background: #111;
+    color: #ddd;
+    display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background: #1a1a1a;
+    padding: 20px;
+    position: fixed;
+    border-right: 1px solid #2a2a2a;
+}
+
+.sidebar h2 {
+    color: #ff8c00;
+}
+
+.sidebar a {
+    display: block;
+    color: #aaa;
+    text-decoration: none;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.sidebar a:hover {
+    background: #2a2a2a;
+    color: #fff;
+}
+
+/* Content */
+.content {
+    margin-left: 270px;
+    padding: 40px;
+    max-width: 900px;
+}
+
+/* Typography */
+h1, h2, h3 {
+    color: #ff8c00;
+}
+
+p {
+    line-height: 1.6;
+}
+
+/* Code blocks */
+pre {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    overflow-x: auto;
+}
+
+code {
+    color: #ffa94d;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+td, th {
+    border: 1px solid #2a2a2a;
+    padding: 8px;
+}
+
+th {
+    background: #1a1a1a;
+}
+
+/* Divider */
+hr {
+    border: none;
+    border-top: 1px solid #2a2a2a;
+    margin: 30px 0;
+}
